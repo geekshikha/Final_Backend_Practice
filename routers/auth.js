@@ -3,6 +3,8 @@ const { Router } = require("express");
 const { toJWT } = require("../auth/jwt");
 const authMiddleware = require("../auth/middleware");
 const User = require("../models/").user;
+const Spaces = require("../models").space;
+const Story = require("../models").story;
 const { SALT_ROUNDS } = require("../config/constants");
 
 const router = new Router();
@@ -10,7 +12,7 @@ const router = new Router();
 router.post("/login", async (req, res, next) => {
   try {
     const { email, password } = req.body;
-
+    console.log("hello");
     if (!email || !password) {
       return res
         .status(400)
@@ -25,9 +27,20 @@ router.post("/login", async (req, res, next) => {
       });
     }
 
+    /***************************************************************************** */
+    const existingUserSpace = await User.findByPk(user.id, {
+      include: [{ model: Spaces, include: [Story] }],
+    });
+
+    /***************************************************************************** */
+
     delete user.dataValues["password"]; // don't send back the password hash
     const token = toJWT({ userId: user.id });
-    return res.status(200).send({ token, user: user.dataValues });
+    return res.status(200).send({
+      token,
+      // user: user.dataValues,
+      existingUser: existingUserSpace, /// ! did by me
+    });
   } catch (error) {
     console.log(error);
     return res.status(400).send({ message: "Something went wrong, sorry" });
@@ -51,7 +64,21 @@ router.post("/signup", async (req, res) => {
 
     const token = toJWT({ userId: newUser.id });
 
-    res.status(201).json({ token, user: newUser.dataValues });
+    //   new user space   //
+    const newUserSpace = await Spaces.create({
+      title: `${newUser.name}'s space`,
+      // description: ,
+      backgroundColor: "#FFFFFF",
+      color: "#4dd091",
+      userId: newUser.id,
+    });
+
+    const fullUser = await User.findByPk(newUser.id, {
+      include: [{ model: Spaces, include: [Story] }],
+    });
+    /***************************************************************************** */
+    res.status(201).json({ token, user: fullUser });
+    // res.send(newUserSpace);
   } catch (error) {
     if (error.name === "SequelizeUniqueConstraintError") {
       return res
@@ -69,7 +96,14 @@ router.post("/signup", async (req, res) => {
 router.get("/me", authMiddleware, async (req, res) => {
   // don't send back the password hash
   delete req.user.dataValues["password"];
-  res.status(200).send({ ...req.user.dataValues });
+  // const user = [...req.user.dataValues];
+  const { id } = req.user;
+
+  const existingUserSpace = await User.findByPk(id, {
+    include: [{ model: Spaces, include: [Story] }],
+  });
+  // res.status(200).send({ ...req.user.dataValues });
+  res.status(200).send(existingUserSpace);
 });
 
 module.exports = router;
