@@ -45,6 +45,12 @@ router.patch("/:id", authMiddleware, async (req, res, next) => {
 
     await spaceToUpdate.update({ title, description, backgroundColor, color });
 
+    //! in my frontend state Space has stories, so maybe it's a good idea to send this
+    //! updated one with the stories as well. It makes it easier to update redux.
+    //! const fullSpace = await Space.findByPk(id, {
+    //!   include: [Story]
+    //! })
+    console.log("heeloooo");
     return res.status(200).send({ spaceToUpdate });
   } catch (e) {
     // console.log(e.message);
@@ -82,6 +88,43 @@ router.delete(
     }
   }
 );
+//
+
+router.post("/:spaceId/stories", authMiddleware, async (req, res, next) => {
+  try {
+    const { spaceId } = req.params;
+    const { name, content, imageUrl } = req.body;
+    const userId = req.user.id;
+    console.log("1");
+    const spaceWithId = await Spaces.findByPk(spaceId); //! bcoz spaceWithId is whole object
+    console.log("2");
+    if (spaceWithId === null) {
+      return res.status(404).send({ message: "This space does not exist" });
+    }
+
+    if (!spaceWithId.userId === userId) {
+      return res
+        .status(403)
+        .send({ message: "You are not authorized to update this space" });
+    }
+
+    if (!name) {
+      return res.status(400).send({ message: "A story must have a name" });
+    }
+    console.log("3");
+    const newStory = await Story.create({
+      name,
+      imageUrl,
+      content,
+      spaceId: spaceWithId.id, //! bcoz spaceWithId is whole object--- we need the id
+    });
+    console.log("4");
+    return res.status(201).send({ message: "Story created", newStory });
+  } catch (error) {
+    console.log(error.message);
+    next(error);
+  }
+});
 
 //Export your router!
 

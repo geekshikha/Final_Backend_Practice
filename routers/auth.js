@@ -100,7 +100,9 @@ router.get("/me", authMiddleware, async (req, res) => {
   const { id } = req.user;
 
   const existingUserSpace = await User.findByPk(id, {
-    include: [{ model: Spaces, include: [Story] }],
+    //TODO include takes and array so everything is inside array []
+    include: [{ model: Spaces, include: [Story] }], //! this syntax bcoz user- related to spaces and spaces --related to story
+    // include: [Spaces, Comments] //! syntax is this if more than 2 model and they are directly connect to user
   });
   // res.status(200).send({ ...req.user.dataValues });
   res.status(200).send(existingUserSpace);

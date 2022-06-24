@@ -25,16 +25,6 @@ module.exports = {
           createdAt: new Date(),
           updatedAt: new Date(),
         },
-        {
-          title: "Pet",
-          description: "New thing to try",
-          backgroundColor: "red",
-          color: "teal",
-
-          userId: 1,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
       ],
       {}
     );
